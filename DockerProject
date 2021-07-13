@@ -16,8 +16,8 @@ node{
                 junit 'reports/**/*.xml' 
         }
 		stage('Push Docker Image'){
-		 withCredentials(string(credentialsId:'docker.pwd', variable: 'dockerpubPwd'))){
-			sh "docker login -u shambhu1977 -p $(dockerPwd)"
+		 withCredentials([string(credentialsId: 'docker-pwd', variable: 'dockerHubPwd')]) {
+			sh "docker login -u shambhu1977 -p ${dockerHubPwd}"
 		 }
 		 sh 'docker push shambhu1977/my-app:2.0.0.'
 		 
