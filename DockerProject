@@ -1,0 +1,33 @@
+
+node{
+    stage('Scm Checkout'){
+      git 'https://github.com/shambhu1977/my-app.git'  
+	  }
+    stages {
+        stage('mvn Package'){ 
+            steps { 
+                sh 'mvn clean Package' 
+            }
+        }
+        stage('Build Docker Image'){
+            steps {
+                sh 'docker built -t shambhu1977/my-app:2.0.0.'
+	   
+                junit 'reports/**/*.xml' 
+        }
+		stage('Push Docker Image'){
+		 withCredentials(string(credentialsId:'docker.pwd', variable: 'dockerpubPwd'))){
+			sh "docker login -u shambhu1977 -p $(dockerPwd)"
+		 }
+		 sh 'docker push shambhu1977/my-app:2.0.0.'
+		 
+		}
+		stage('Run Container on Dev Server'){
+		def dockerRun = 'docker run -p 8080:8080 -d --name my-app shambhu1977/my-app:2.0.0'
+		sshagent(['dev-server']){
+			sh "ssh - o StrictHostKeyChecking=no ubuntu@18.144.163.20 $ {dockerRun}"
+		
+            }
+        }
+    }
+}
