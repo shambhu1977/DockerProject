@@ -1,33 +1,25 @@
-
 node{
     stage('Scm Checkout'){
-      git 'https://github.com/shambhu1977/my-app.git'  
-	  }
-    stages {
-        stage('mvn Package'){ 
-            steps { 
-                sh 'mvn clean Package' 
-            }
-        }
-        stage('Build Docker Image'){
-            steps {
-                sh 'docker built -t shambhu1977/my-app:2.0.0.'
-	   
-                junit 'reports/**/*.xml' 
-        }
-		stage('Push Docker Image'){
-		 withCredentials([string(credentialsId: 'docker-pwd', variable: 'dockerHubPwd')]) {
-			sh "docker login -u shambhu1977 -p ${dockerHubPwd}"
-		 }
-		 sh 'docker push shambhu1977/my-app:2.0.0.'
-		 
-		}
-		stage('Run Container on Dev Server'){
-		def dockerRun = 'docker run -p 8080:8080 -d --name my-app shambhu1977/my-app:2.0.0'
-		sshagent(['dev-server']){
-			sh "ssh - o StrictHostKeyChecking=no ubuntu@18.144.163.20 ${dockerRun}"
-		
-            }
-        }
+        git branch: 'main', credentialsId: 'git_creds', url: 'https://github.com/shambhu1977/my-app.git'  
+    }  
+    stage('Mvn Package'){
+		def mvnHome = tool name: 'Marven', type: 'maven'
+		def mvnCMD = "${mvnHome}/bin/mvn"
+        sh "${mvnCMD} clean package"
     }
+    stage('Build Docker Image'){
+		sh 'docker built -t shambhu1977/my-app:2.0.0.'
+	}
+	stage('Push Docker Image'){
+		withCredentials([string(credentialsId: 'docker-pwd', variable: 'dockerHubPwd')]) {
+			sh "docker login -u shambhu1977 -p ${dockerHubPwd}"
+		}
+		sh 'docker push shambhu1977/my-app:2.0.0.'
+	}
+	stage('Run Container on Dev Server'){
+		def dockerRun = 'docker run -p 8080:8080 -d --name my-app shambhu1977/my-app:2.0.0'
+		 sshagent(['dev-server']) {
+			sh "ssh - o StrictHostKeyChecking=no ubuntu@18.144.163.20 ${dockerRun}"
+		}
+	}
 }
